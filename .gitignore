@@ -1,0 +1,23 @@
+# Arquivos de Log
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Pasta de build do Maven
+target/
+
+# Arquivos de IDE
+.idea/
+*.iml
+*.iws
+.classpath
+.project
+.settings/
+.DS_Store
+
+# Arquivos gerados pelo sistema operacional
+Thumbs.db
+
+# Arquivos de configuração sensíveis (VAMOS CRIAR ESTE LOGO ABAIXO)
+application-dev.properties
