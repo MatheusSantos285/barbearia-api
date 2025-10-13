@@ -112,7 +112,7 @@ public class BarbeiroService {
      * @throws EntidadeNaoEncontradaException se o barbeiro não for encontrado.
      */
     public void deletar(Long id) {
-        Barbeiro veiculo = barbeiroRepository.findById(id)
+        Barbeiro barbeiro = barbeiroRepository.findById(id)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Barbeiro não encontrado com o ID: " + id));
 
         barbeiroRepository.deleteById(id);
