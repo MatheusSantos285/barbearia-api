@@ -2,6 +2,7 @@ package br.com.projetobarbearia.api.config.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -21,7 +22,9 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         // Por enquanto, vamos desabilitar a proteção CSRF e autorizar todas as requisições
         // para focar apenas na criptografia da senha. Depois adicionaremos as regras de autorização.
-        return http.csrf(AbstractHttpConfigurer::disable)
+        return http
+                .cors(Customizer.withDefaults())
+                .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(req -> req.anyRequest().permitAll())
                 .build();

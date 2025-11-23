@@ -52,6 +52,8 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
      */
     List<Agendamento> findByClienteId(Long clienteId);
 
+    List<Agendamento> findByBarbeiroId(Long barbeiroId);
+
     /**
      * Busca por agendamentos que conflitam com um novo horário para um barbeiro específico.
      * Um conflito existe se:

@@ -7,15 +7,14 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 public record CriarAgendamentoDTO(
-        @NotEmpty
+        @NotNull
         Long barbeiroId,
-        @NotEmpty
+        @NotNull
         Long clienteId,
-        @NotEmpty
+        @NotNull
         Long servicoId,
-
         @NotNull
         @Future
-        LocalDateTime datahoraInicio
+        LocalDateTime dataHoraInicio
 ) {
 }
