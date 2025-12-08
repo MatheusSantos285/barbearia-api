@@ -9,6 +9,7 @@ import br.com.projetobarbearia.api.domain.exception.RegraDeNegocioException;
 import br.com.projetobarbearia.api.domain.model.Cliente;
 import br.com.projetobarbearia.api.domain.repository.ClienteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,9 @@ public class ClienteService {
     @Autowired
     private ClienteRepository clienteRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Transactional
     public RespostaClienteDTO criar(CriarClienteDTO dto) {
         Optional<Cliente> clienteExistente = clienteRepository.findByTelefone(dto.telefone());
@@ -29,9 +33,18 @@ public class ClienteService {
             throw new RegraDeNegocioException("Já existe um cliente cadastrado com o telefone: " + dto.telefone());
         }
 
+        boolean emailExists = clienteRepository.existsByEmail(dto.email());
+        if (emailExists) {
+            throw new RegraDeNegocioException("Já existe um cliente cadastrado com o email: " + dto.email());
+        }
+
         Cliente cliente = new Cliente();
         cliente.setNome(dto.nome());
         cliente.setTelefone(dto.telefone());
+        cliente.setEmail(dto.email());
+
+        String senhaCriptografada = passwordEncoder.encode(dto.senha());
+        cliente.setSenha(senhaCriptografada);
 
         Cliente clienteSalvo = clienteRepository.save(cliente);
 
@@ -92,7 +105,8 @@ public class ClienteService {
         return new RespostaClienteDTO(
                 cliente.getId(),
                 cliente.getNome(),
-                cliente.getTelefone()
+                cliente.getTelefone(),
+                cliente.getEmail()
         );
     }
 }

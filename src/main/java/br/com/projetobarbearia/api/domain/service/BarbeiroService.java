@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -32,13 +33,23 @@ public class BarbeiroService {
      * @return DTO com os dados do barbeiro criado.
      */
     public RespostaBarbeiroDTO criar(CriarBarbeiroDTO dto) {
+        Optional<Barbeiro> barbeiroExistente = barbeiroRepository.findByTelefone(dto.telefone());
+        if (barbeiroExistente.isPresent()) {
+            throw new EntidadeNaoEncontradaException("Já existe um barbeiro cadastrado com o telefone: " + dto.telefone());
+        }
+
+        boolean emailExists = barbeiroRepository.existsByEmail(dto.email());
+        if (emailExists) {
+            throw new EntidadeNaoEncontradaException("Já existe um barbeiro cadastrado com o email: " + dto.email());
+        }
+
         Barbeiro barbeiro = new Barbeiro();
         barbeiro.setNome(dto.nome());
+        barbeiro.setTelefone(dto.telefone());
         barbeiro.setEmail(dto.email());
 
         String senhaCriptografada = passwordEncoder.encode(dto.senha());
         barbeiro.setSenha(senhaCriptografada);
-        barbeiro.setTelefone(dto.telefone());
 
         Barbeiro barbeiroRetorno = barbeiroRepository.save(barbeiro);
 

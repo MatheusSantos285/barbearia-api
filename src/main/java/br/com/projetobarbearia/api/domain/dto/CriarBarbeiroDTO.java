@@ -17,12 +17,12 @@ public record CriarBarbeiroDTO(
         @Size(min = 3, max = 100)
         String nome,
 
-        @NotBlank
-        @Email
+        @NotBlank(message = "O e-mail é obrigatório")
+        @Email(message = "Formato de e-mail inválido")
         String email,
 
-        @NotBlank
-        @Size(min = 6)
+        @NotBlank(message = "A senha é obrigatória")
+        @Size(min = 6, message = "A senha deve ter no mínimo 6 caracteres")
         String senha,
 
         @NotBlank
