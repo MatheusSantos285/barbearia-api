@@ -14,17 +14,40 @@ import java.net.URI;
 import java.util.List;
 
 /**
- * Controlador REST para gerenciar as operações relacionadas a Barbeiros.
+ * Controlador REST para gerenciar as operações relacionadas a barbeiros.
+ *
+ * <p>Responsável por expor endpoints para cadastro, atualização parcial, listagem,
+ * consulta por id e remoção de barbeiros.
+ *
+ * <p>URLs:
+ * <ul>
+ *   <li>POST /barbeiros — cria um barbeiro.</li>
+ *   <li>PATCH /barbeiros/{id} — atualiza parcialmente um barbeiro.</li>
+ *   <li>GET /barbeiros — lista todos os barbeiros.</li>
+ *   <li>GET /barbeiros/{id} — busca barbeiro por id.</li>
+ *   <li>DELETE /barbeiros/{id} — deleta barbeiro por id.</li>
+ * </ul>
  */
 @RestController
 @RequestMapping("/barbeiros")
 public class BarbeiroController {
 
+    /**
+     * Serviço que contém a lógica de negócio para operações com barbeiros.
+     */
     @Autowired
     private BarbeiroService barbeiroService;
 
     /**
      * Cria um novo barbeiro.
+     *
+     * <p>Contrato:
+     * <ul>
+     *   <li>Entrada: {@link CriarBarbeiroDTO} com os dados do barbeiro (validação aplicada via {@link Valid}).</li>
+     *   <li>Saída: {@link ResponseEntity} com status 201 (Created), cabeçalho Location apontando para o recurso criado
+     *       e corpo contendo {@link RespostaBarbeiroDTO}.</li>
+     *   <li>Erros: retorna 400 em caso de validação ou outras respostas conforme regras de negócio.</li>
+     * </ul>
      *
      * @param dto DTO com os dados para a criação do barbeiro.
      * @return ResponseEntity com o barbeiro criado e o status 201 (Created).
@@ -44,6 +67,13 @@ public class BarbeiroController {
 
     /**
      * Atualiza parcialmente um barbeiro existente.
+     *
+     * <p>Contrato:
+     * <ul>
+     *   <li>Entrada: {@code id} do barbeiro como {@link PathVariable} e {@link AtualizarBarbeiroDTO} no corpo.</li>
+     *   <li>Saída: {@link ResponseEntity} com status 200 (OK) e {@link RespostaBarbeiroDTO} atualizado.</li>
+     *   <li>Erros: retorna 404 se o barbeiro não for encontrado ou 400/409 conforme regras de negócio.</li>
+     * </ul>
      *
      * @param id O ID do barbeiro a ser atualizado.
      * @param dto DTO com os dados a serem atualizados.
@@ -80,6 +110,13 @@ public class BarbeiroController {
 
     /**
      * Deleta um barbeiro pelo seu ID.
+     *
+     * <p>Contrato:
+     * <ul>
+     *   <li>Entrada: {@code id} do barbeiro como {@link PathVariable}.</li>
+     *   <li>Saída: {@link ResponseEntity} com status 204 (No Content) quando a exclusão for bem-sucedida.</li>
+     *   <li>Erros: retorna 404 se o barbeiro não existir.</li>
+     * </ul>
      *
      * @param id O ID do barbeiro a ser deletado.
      * @return ResponseEntity com o status 204 (No Content).

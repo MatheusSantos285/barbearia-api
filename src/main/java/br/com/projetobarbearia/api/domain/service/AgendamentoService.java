@@ -19,20 +19,70 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Serviço responsável pelo processo de agendamento de serviços na barbearia.
+ *
+ * <p>Responsabilidades:
+ * <ul>
+ *   <li>Criar agendamentos garantindo consistência (verifica barbeiro, cliente, serviço e conflitos).</li>
+ *   <li>Cancelar agendamentos respeitando regras de negócio (ex.: não cancelar após a data).</li>
+ *   <li>Listar agendamentos por barbeiro ou cliente.</li>
+ *   <li>Calcular horários disponíveis para um barbeiro e serviço em uma data.</li>
+ * </ul>
+ *
+ * <p>Exceções lançadas:
+ * <ul>
+ *   <li>{@link EntidadeNaoEncontradaException} quando entidades referenciadas não existem.</li>
+ *   <li>{@link RegraDeNegocioException} para violação de regras do domínio (por exemplo, conflito de horário).</li>
+ * </ul>
+ */
 @Service
 public class AgendamentoService {
 
+    /**
+     * Repositório de agendamentos para persistência e consultas customizadas.
+     */
     @Autowired
     private AgendamentoRepository agendamentoRepository;
+
+    /**
+     * Repositório de barbeiros (usado para validações de existência).</li>
+     */
     @Autowired
     private BarbeiroRepository barbeiroRepository;
+
+    /**
+     * Repositório de clientes (usado para validações de existência).
+     */
     @Autowired
     private ClienteRepository clienteRepository;
+
+    /**
+     * Repositório de serviços (usado para validar vínculo serviços/barbeiro e duração).
+     */
     @Autowired
     private ServicoRepository servicoRepository;
+
+    /**
+     * Repositório de horários de trabalho dos barbeiros.
+     */
     @Autowired
     private HorarioTrabalhoRepository  horarioTrabalhoRepository;
 
+    /**
+     * Cria um novo agendamento baseado nos dados do DTO.
+     *
+     * <p>Contrato:
+     * <ul>
+     *   <li>Entrada: {@link CriarAgendamentoDTO} com ids de barbeiro, cliente, serviço e data/hora de início.</li>
+     *   <li>Saída: {@link RespostaAgendamentoDTO} representando o agendamento persistido.</li>
+     *   <li>Erros: {@link EntidadeNaoEncontradaException} se barbeiro/cliente/serviço não existirem;
+     *       {@link RegraDeNegocioException} em caso de conflito de horário ou serviço incompatível.</li>
+     * </ul>
+     *
+     * @param dto dados para criação do agendamento.
+     * @return dados do agendamento criado.
+     */
     @Transactional
     public RespostaAgendamentoDTO agendar(CriarAgendamentoDTO dto) {
 
@@ -69,6 +119,20 @@ public class AgendamentoService {
         return converterParaRespostaDTO(agendamentoSalvo);
     }
 
+    /**
+     * Cancela um agendamento existente se cumprir as regras de negócio.
+     *
+     * <p>Regras aplicadas:
+     * <ul>
+     *   <li>Não é possível cancelar um agendamento que já ocorreu.</li>
+     *   <li>Apenas agendamentos com status {@link AgendamentoStatus#MARCADO} podem ser cancelados.</li>
+     * </ul>
+     *
+     * @param agendamentoId id do agendamento a ser cancelado.
+     * @return DTO com os dados do agendamento após o cancelamento.
+     * @throws EntidadeNaoEncontradaException se o agendamento não existir.
+     * @throws RegraDeNegocioException se a regra de cancelamento for violada.
+     */
     @Transactional
     public RespostaAgendamentoDTO cancelar(Long agendamentoId) {
         Agendamento agendamento = agendamentoRepository.findById(agendamentoId)
@@ -87,6 +151,13 @@ public class AgendamentoService {
         return converterParaRespostaDTO(agendamentoSalvo);
     }
 
+    /**
+     * Lista todos os agendamentos de um barbeiro.
+     *
+     * @param barbeiroId id do barbeiro.
+     * @return lista de {@link RespostaAgendamentoDTO} associados ao barbeiro.
+     * @throws EntidadeNaoEncontradaException se o barbeiro não existir.
+     */
     public List<RespostaAgendamentoDTO> listarPorBarbeiro(Long barbeiroId) {
         barbeiroRepository.findById(barbeiroId)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Barbeiro não encontrado com ID: " + barbeiroId));
@@ -98,6 +169,13 @@ public class AgendamentoService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Lista todos os agendamentos de um cliente.
+     *
+     * @param clienteId id do cliente.
+     * @return lista de {@link RespostaAgendamentoDTO} associados ao cliente.
+     * @throws EntidadeNaoEncontradaException se o cliente não existir.
+     */
     public List<RespostaAgendamentoDTO> listarPorCliente(Long clienteId) {
         clienteRepository.findById(clienteId)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Cliente não encontrado com ID: " + clienteId));
@@ -109,6 +187,25 @@ public class AgendamentoService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Calcula os horários disponíveis para um barbeiro e um serviço em uma data específica.
+     *
+     * <p>Fluxo resumido:
+     * <ol>
+     *   <li>Valida existência do serviço e obtém sua duração.</li>
+     *   <li>Encontra o horário de trabalho do barbeiro para o dia da semana solicitado.</li>
+     *   <li>Coleta agendamentos já existentes do dia (ignorando os cancelados).</li>
+     *   <li>Percorre os slots do expediente (com intervalo fixo de 30 minutos) e agrega os slots
+     *       que não conflitam com agendamentos existentes.</li>
+     * </ol>
+     *
+     * @param barbeiroId id do barbeiro.
+     * @param servicoId id do serviço.
+     * @param data data para a qual calcular a disponibilidade.
+     * @return lista de {@link HorarioDisponivelDTO} representando horários iniciáveis disponíveis.
+     * @throws EntidadeNaoEncontradaException se o serviço não existir.
+     * @throws RegraDeNegocioException se o barbeiro não trabalhar no dia solicitado.
+     */
     public List<HorarioDisponivelDTO> listarHorariosDisponiveis (Long barbeiroId, Long servicoId, LocalDate data) {
         Servico servico = servicoRepository.findById(servicoId)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Serviço não encontrado."));
@@ -168,6 +265,12 @@ public class AgendamentoService {
         return horariosDisponiveis;
     }
 
+    /**
+     * Converte a entidade {@link Agendamento} para o DTO de resposta.
+     *
+     * @param agendamento entidade persistida.
+     * @return {@link RespostaAgendamentoDTO} contendo os dados a serem expostos pela API.
+     */
     private RespostaAgendamentoDTO converterParaRespostaDTO(Agendamento agendamento) {
         return new RespostaAgendamentoDTO(
                 agendamento.getId(),
